@@ -195,6 +195,10 @@ section > span{
 	font-style: bold;
 	font-family: 'Permanent Marker', cursive;	
 }
+
+
+
+
 /* large device */
 @media(min-width: 1200px){
 
