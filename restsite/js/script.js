@@ -14,9 +14,9 @@ $(function () { // Same as document.addEventListener("DOMContentLoaded"...
   // which is set up above will not be called.
   // Refer to issue #28 in the repo.
   // Solution: force focus on the element that the click event fired on
-  // $("#navbarToggle").click(function (event) {
-  //   $(event.target).focus();
-  // });
+  $("#navbarToggle").click(function (event) {
+    $(event.target).focus();
+  });
 });
 
 (function (global) {
@@ -24,15 +24,14 @@ $(function () { // Same as document.addEventListener("DOMContentLoaded"...
 var dc = {};
 
 var homeHtml = "snippets/home-snippet.html";
-var allCategoriesUrl = "https://davids-restaurant.herokuapp.com/categories.json";
+var allCategoriesUrl =
+  "https://davids-restaurant.herokuapp.com/categories.json";
 var categoriesTitleHtml = "snippets/category-title-snippet.html";
 var categoryHtml = "snippets/category-snippet.html";
-
-var menuItemsUrl = "https://davids-restaurant.herokuapp.com/menu_items.json?category=";
+var menuItemsUrl =
+  "https://davids-restaurant.herokuapp.com/menu_items.json?category=";
 var menuItemsTitleHtml = "snippets/menu-item-title.html";
 var menuItemHtml = "snippets/menu-item.html";
-
-
 
 // Convenience function for inserting innerHTML for 'select'
 var insertHtml = function (selector, html) {
@@ -47,11 +46,29 @@ var showLoading = function (selector) {
   insertHtml(selector, html);
 };
 
-
-var insertProperty = function (string, propName, propValue){
-  var proToReplace = "{{" + propName + "}}";
-  string = string.replace(new RegExp(proToReplace, "g"), propValue);
+// Return substitute of '{{propName}}'
+// with propValue in given 'string'
+var insertProperty = function (string, propName, propValue) {
+  var propToReplace = "{{" + propName + "}}";
+  string = string
+    .replace(new RegExp(propToReplace, "g"), propValue);
   return string;
+}
+
+
+// Remove the class 'active' from home and switch to Menu button
+var switchMenuToActive = function () {
+  // Remove 'active' from home button
+  var classes = document.querySelector("#navHomeButton").className;
+  classes = classes.replace(new RegExp("active", "g"), "");
+  document.querySelector("#navHomeButton").className = classes;
+
+  // Add 'active' to menu button if not already there
+  classes = document.querySelector("#navMenuButton").className;
+  if (classes.indexOf("active") == -1) {
+    classes += " active";
+    document.querySelector("#navMenuButton").className = classes;
+  }
 };
 
 
@@ -69,44 +86,73 @@ $ajaxutlis.sendGetRequest(
   false);
 });
 
-
+// Load the menu categories view
 dc.loadMenuCategories = function () {
   showLoading("#main-content");
-  $ajaxutlis.sendGetRequest(allCategoriesUrl, buildAndShowCategoriesHTML);
+  $ajaxutlis.sendGetRequest(
+    allCategoriesUrl,
+    buildAndShowCategoriesHTML);
 };
 
+
+// Load the menu items view
+// 'categoryShort' is a short_name for a category
 dc.loadMenuItems = function (categoryShort) {
   showLoading("#main-content");
-  $ajaxutlis.sendGetRequest(menuItemsUrl + categoryShort, buildAndShowCategoriesHTML);
+  $ajaxutlis.sendGetRequest(
+    menuItemsUrl + categoryShort,
+    buildAndShowMenuItemsHTML);
 };
 
 
-
-
+// Builds HTML for the categories page based on the data
+// from the server
 function buildAndShowCategoriesHTML (categories) {
+  // Load title snippet of categories page
+  $ajaxutlis.sendGetRequest(
+    categoriesTitleHtml,
+    function (categoriesTitleHtml) {
+      // Retrieve single category snippet
+      $ajaxutlis.sendGetRequest(
 
-  $ajaxutlis.sendGetRequest(categoriesTitleHtml, function(categoriesTitleHtml){
 
-    $ajaxutlis.sendGetRequest(categoryHtml, function(categoryHtml){
-      var categoriesViewHtml = buildCategoriesViewHtml(categories, categoriesTitleHtml, categoryHtml);
-      insertHtml("#main-content", categoriesViewHtml);
+        
+        categoryHtml,
+        function (categoryHtml) {
+          var categoriesViewHtml =
+            buildCategoriesViewHtml(categories,
+                                    categoriesTitleHtml,
+                                    categoryHtml);
+          insertHtml("#main-content", categoriesViewHtml);
+        },
+        false);
     },
     false);
-  },
-  false);
-};
+}
 
-function buildCategoriesViewHtml(categories, categoriesTitleHtml, categoryHtml){
-  var finalHtml = categoriesTitleHtml;  
- finalHtml += "<section class = row>";
 
+// Using categories data and snippets html
+// build categories view HTML to be inserted into page
+function buildCategoriesViewHtml(categories,
+                                 categoriesTitleHtml,
+                                 categoryHtml) {
+
+  var finalHtml = categoriesTitleHtml;
+  finalHtml += "<section class='row'>";
+
+  // Loop over categories
   for (var i = 0; i < categories.length; i++) {
+    // Insert category values
     var html = categoryHtml;
-    var name = categories[i].name;
+    var name = "" + categories[i].name;
     var short_name = categories[i].short_name;
-    html = insertProperty(html, "name", name);
-    html = insertProperty(html, "short_name", short_name);
-    finalHtml += html;   
+    html =
+      insertProperty(html, "name", name);
+    html =
+      insertProperty(html,
+                     "short_name",
+                     short_name);
+    finalHtml += html;
   }
 
   finalHtml += "</section>";
@@ -114,19 +160,32 @@ function buildCategoriesViewHtml(categories, categoriesTitleHtml, categoryHtml){
 }
 
 
+
+// Builds HTML for the single category page based on the data
+// from the server
 function buildAndShowMenuItemsHTML (categoryMenuItems) {
-
-  $ajaxutlis.sendGetRequest(menuItemsTitleHtml, function(menuItemsTitleHtml){
-
-    $ajaxutlis.sendGetRequest(menuItemHtml, function(menuItemHtml){
-      var menuItemsViewHtml = buildmenuItemsViewHtml(categoryMenuItems, menuItemsTitleHtml, menuItemHtml);
-      insertHtml("#main-content", menuItemsViewHtml);
+  // Load title snippet of menu items page
+  $ajaxutlis.sendGetRequest(
+    menuItemsTitleHtml,
+    function (menuItemsTitleHtml) {
+      // Retrieve single menu item snippet
+      $ajaxutlis.sendGetRequest(
+        menuItemHtml,
+        function (menuItemHtml) {
+          var menuItemsViewHtml =
+            buildMenuItemsViewHtml(categoryMenuItems,
+                                   menuItemsTitleHtml,
+                                   menuItemHtml);
+          insertHtml("#main-content", menuItemsViewHtml);
+        },
+        false);
     },
     false);
-  },
-  false);
-};
+}
 
+
+// Using category and menu items data and snippets html
+// build menu items view HTML to be inserted into page
 function buildMenuItemsViewHtml(categoryMenuItems,
                                 menuItemsTitleHtml,
                                 menuItemHtml) {
@@ -222,8 +281,6 @@ function insertItemPortionName(html,
   html = insertProperty(html, portionPropName, portionValue);
   return html;
 }
-
-
 
 
 global.$dc = dc;
